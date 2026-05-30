@@ -296,6 +296,48 @@ body {
   flex: 1;
 }
 
+/* ── Context menu (right-click a row) ──────────────────────────────────── */
+.context-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+.context-menu {
+  position: fixed;
+  min-width: 150px;
+  padding: 4px;
+  background: #25272c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.context-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.context-menu__item:hover {
+  background: #34373e;
+}
+.context-menu__item--danger:hover {
+  background: #4a2326;
+  color: #ff8b8b;
+}
+.context-menu__hint {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 /* ── Scrollbar ─────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 12px;

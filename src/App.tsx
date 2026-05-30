@@ -17,6 +17,7 @@ import { TopBar } from "./components/TopBar";
 import { SearchBox } from "./components/SearchBox";
 import { FileList } from "./components/FileList";
 import { PlayerBar } from "./components/PlayerBar";
+import { ContextMenu } from "./components/ContextMenu";
 import "./styles.css";
 
 /** Simple centered message used for the empty / scanning / no-files / error states. */
@@ -54,6 +55,7 @@ function App() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   // Live, case-insensitive substring filter over the relative path.
   const filtered = useMemo(() => {
@@ -125,6 +127,40 @@ function App() {
   playRef.current = play;
   const onSelect = useCallback((index: number) => playRef.current(index), []);
 
+  // Move the currently-selected file to the Recycle Bin and drop it from the list.
+  // Does not start playback; the cursor stays put so the next file slides under it.
+  const deleteSelected = useCallback(async () => {
+    const idx = selectedIndexRef.current;
+    const list = filteredRef.current;
+    if (idx < 0 || idx >= list.length) return;
+    const file = list[idx];
+    try {
+      await invoke("delete_file", { path: file.path });
+    } catch (err) {
+      setPlayError(`Couldn't delete "${file.name}": ${String(err)}`);
+      return;
+    }
+    // If the deleted file was the one loaded in the player, stop it.
+    if (playingFileRef.current?.path === file.path) {
+      audioRef.current?.pause();
+      setPlayingFile(null);
+      setIsPlaying(false);
+    }
+    setFiles((prev) => prev.filter((f) => f.path !== file.path));
+    // Clamp the cursor: same index now points to the next file (or the new last).
+    const newLen = list.length - 1;
+    setSelectedIndex(idx >= newLen ? newLen - 1 : idx);
+  }, []);
+
+  // Right-click a row: select it (no playback) and open the context menu there.
+  const onContextMenu = useCallback((index: number, x: number, y: number) => {
+    setSelectedIndex(index);
+    setMenu({
+      x: Math.min(x, window.innerWidth - 160),
+      y: Math.min(y, window.innerHeight - 80),
+    });
+  }, []);
+
   // ── Folder scanning ───────────────────────────────────────────────────
   const scan = useCallback(async (path: string, isRestore = false) => {
     audioRef.current?.pause();
@@ -187,6 +223,7 @@ function App() {
     },
     onTogglePlayPause: () => controller.togglePlayPause(),
     onReplay: () => play(selectedIndexRef.current),
+    onDelete: () => void deleteSelected(),
     onFocusSearch: () => {
       const el = searchInputRef.current;
       if (el) {
@@ -195,6 +232,7 @@ function App() {
       }
     },
     onEscape: () => {
+      setMenu(null);
       if (queryRef.current) setQuery("");
       searchInputRef.current?.blur();
     },
@@ -236,6 +274,7 @@ function App() {
         selectedIndex={selectedIndex}
         playingPath={playingFile?.path ?? null}
         onSelect={onSelect}
+        onContextMenu={onContextMenu}
       />
     );
   }
@@ -267,6 +306,17 @@ function App() {
             setCurrentTime(t);
           }}
           onVolumeChange={setVolume}
+        />
+      )}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onDelete={() => {
+            setMenu(null);
+            void deleteSelected();
+          }}
+          onClose={() => setMenu(null)}
         />
       )}
       {/* The single persistent audio element — never keyed, src set imperatively. */}

@@ -7,6 +7,7 @@ export interface KeyboardHandlers {
   onArrowUp: () => void;
   onTogglePlayPause: () => void;
   onReplay: () => void;
+  onDelete: () => void;
   onFocusSearch: () => void;
   onEscape: () => void;
 }
@@ -69,6 +70,10 @@ export function useKeyboard(handlers: KeyboardHandlers): void {
         case "Enter":
           e.preventDefault();
           h.onReplay();
+          break;
+        case "Delete":
+          e.preventDefault();
+          h.onDelete();
           break;
       }
     };

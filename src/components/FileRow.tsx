@@ -11,6 +11,7 @@ interface FileRowProps {
   isSelected: boolean;
   isPlaying: boolean;
   onSelect: (index: number) => void;
+  onContextMenu: (index: number, x: number, y: number) => void;
 }
 
 /**
@@ -24,6 +25,7 @@ export const FileRow = memo(function FileRow({
   isSelected,
   isPlaying,
   onSelect,
+  onContextMenu,
 }: FileRowProps) {
   // Subfolder = rel_path minus the file name (empty when the file sits in root).
   const slash = file.rel_path.lastIndexOf("/");
@@ -39,6 +41,10 @@ export const FileRow = memo(function FileRow({
       className={className}
       style={{ height: ROW_HEIGHT }}
       onClick={() => onSelect(index)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onContextMenu(index, e.clientX, e.clientY);
+      }}
       role="option"
       aria-selected={isSelected}
     >

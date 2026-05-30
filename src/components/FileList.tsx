@@ -7,6 +7,7 @@ interface FileListProps {
   selectedIndex: number;
   playingPath: string | null;
   onSelect: (index: number) => void;
+  onContextMenu: (index: number, x: number, y: number) => void;
 }
 
 /**
@@ -19,6 +20,7 @@ export function FileList({
   selectedIndex,
   playingPath,
   onSelect,
+  onContextMenu,
 }: FileListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +46,7 @@ export function FileList({
           isSelected={index === selectedIndex}
           isPlaying={file.path === playingPath}
           onSelect={onSelect}
+          onContextMenu={onContextMenu}
         />
       ))}
     </div>
