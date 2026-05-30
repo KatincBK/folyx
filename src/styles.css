@@ -1,0 +1,313 @@
+/* ── Folyx / SFX Browser — minimalist dark theme ──────────────────────────
+   Developer-tool aesthetic: neutral grays, one accent, no decorative shadows
+   or gradients. The list and instant playback are the product; chrome recedes. */
+
+:root {
+  --bg: #1a1b1e;
+  --bg-elev: #212327;
+  --bg-row-hover: #26282d;
+  --bg-selected: #2a3550;
+  --border: #2e3035;
+  --text: #e6e7ea;
+  --text-dim: #8a8d94;
+  --text-faint: #62656c;
+  --accent: #5b8cff;
+  --error: #ff6b6b;
+
+  color-scheme: dark;
+  accent-color: var(--accent);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ── App shell: fixed bars top & bottom, scrollable middle ─────────────── */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.top-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+
+.top-bar__path {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.top-bar__count {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn {
+  flex: none;
+  padding: 6px 12px;
+  background: #2c2f36;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn:hover {
+  background: #353941;
+}
+.btn:active {
+  background: #2c2f36;
+}
+
+/* ── Search box ────────────────────────────────────────────────────────── */
+.search-box {
+  flex: none;
+  padding: 8px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.search-box__input {
+  width: 100%;
+  padding: 7px 10px;
+  background: #16171a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+.search-box__input:focus {
+  border-color: var(--accent);
+}
+.search-box__input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ── File list ─────────────────────────────────────────────────────────── */
+.file-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  outline: none;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid #232427;
+  cursor: pointer;
+}
+.file-row:hover {
+  background: var(--bg-row-hover);
+}
+.file-row--selected {
+  background: var(--bg-selected);
+}
+.file-row--playing {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.file-row__marker {
+  flex: none;
+  width: 12px;
+  color: var(--accent);
+  font-size: 10px;
+  text-align: center;
+}
+
+.file-row__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.25;
+}
+.file-row__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-row__sub {
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-row__ext {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+/* ── Centered states (empty / scanning / error / no files) ─────────────── */
+.center-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.center-state__title {
+  font-size: 15px;
+  color: var(--text);
+}
+.center-state__hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  max-width: 360px;
+}
+.center-state--error .center-state__title {
+  color: var(--error);
+}
+
+/* ── Player bar ────────────────────────────────────────────────────────── */
+.player-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--bg-elev);
+  border-top: 1px solid var(--border);
+}
+
+.player-bar__play {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2c2f36;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 13px;
+  cursor: pointer;
+}
+.player-bar__play:hover:not(:disabled) {
+  background: #353941;
+}
+.player-bar__play:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.player-bar__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.player-bar__now {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-bar__name {
+  color: var(--text-dim);
+}
+.player-bar__error {
+  color: var(--error);
+}
+
+.player-bar__seek {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.player-bar__time {
+  flex: none;
+  width: 40px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.player-bar__time:last-child {
+  text-align: right;
+}
+
+.player-bar__range {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+}
+
+.player-bar__volume {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 130px;
+}
+.player-bar__vol-icon {
+  font-size: 13px;
+  opacity: 0.6;
+}
+.player-bar__range--vol {
+  flex: 1;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3d44;
+  border: 3px solid var(--bg);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #474b53;
+}
