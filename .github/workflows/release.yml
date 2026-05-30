@@ -1,0 +1,49 @@
+name: Release
+
+# Cut a release by pushing a version tag, e.g.:
+#   npm version patch        # bumps package.json + tauri.conf.json is bumped manually
+#   git tag v0.2.0 && git push origin v0.2.0
+# This builds + signs the Windows installer and publishes a GitHub Release with
+# `latest.json`, which the installed app reads to self-update.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Folyx ${{ github.ref_name }}"
+          releaseBody: "Download the installer below. Already have Folyx? It updates itself."
+          releaseDraft: false
+          prerelease: false
