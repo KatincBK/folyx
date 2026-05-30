@@ -103,12 +103,18 @@ fn scan_folder(root: String) -> Result<Vec<AudioFile>, String> {
     Ok(files)
 }
 
+/// Move a file to the OS Recycle Bin / Trash (recoverable — not a hard delete).
+#[tauri::command]
+fn delete_file(path: String) -> Result<(), String> {
+    trash::delete(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![scan_folder])
+        .invoke_handler(tauri::generate_handler![scan_folder, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
