@@ -42,7 +42,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERFNUY1NTFCMjExOERENwpSV1RYalJHeVVmWGxEZWwrcDY5ZThsa0duMFMwRUhCQTQ1UEVIME0yOGhOUDdJR3BGVTVoNVdCUAo=",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNjA4Mjk0OUE3RTY1QzMKUldURFpYNmFsSUpnOGZaK0pKOUh2UURQekQ5Z0lhQjRuUDM2bENreDVRK013Qjd1WU01SktZWXkK",
       "endpoints": [
         "https://github.com/KatincBK/folyx/releases/latest/download/latest.json"
       ]
