@@ -3,6 +3,7 @@ interface TopBarProps {
   totalCount: number;
   filteredCount: number;
   isFiltering: boolean;
+  version: string | null;
   onOpen: () => void;
 }
 
@@ -20,6 +21,7 @@ export function TopBar({
   totalCount,
   filteredCount,
   isFiltering,
+  version,
   onOpen,
 }: TopBarProps) {
   const count = isFiltering ? `${filteredCount} / ${totalCount}` : `${totalCount}`;
@@ -28,16 +30,19 @@ export function TopBar({
       <button className="btn" onClick={onOpen}>
         Open Folder
       </button>
-      {root && (
+      {root ? (
         <span className="top-bar__path" title={root}>
           {middleEllipsis(root)}
         </span>
+      ) : (
+        <span className="top-bar__spacer" />
       )}
       {root && (
         <span className="top-bar__count">
           {count} sound{totalCount === 1 ? "" : "s"}
         </span>
       )}
+      {version && <span className="top-bar__version">v{version}</span>}
     </header>
   );
 }

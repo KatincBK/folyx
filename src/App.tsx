@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import { open } from "@tauri-apps/plugin-dialog";
 
 import type { AudioFile } from "./types";
@@ -58,6 +59,14 @@ function App() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
+  // App version (from tauri.conf.json) shown in the top-right corner.
+  useEffect(() => {
+    void getVersion()
+      .then(setAppVersion)
+      .catch(() => {});
+  }, []);
 
   // Self-update: checks GitHub Releases on launch; banner appears only if found.
   const { status: updateStatus, version: updateVersion, install: installUpdate } =
@@ -299,6 +308,7 @@ function App() {
         totalCount={files.length}
         filteredCount={filtered.length}
         isFiltering={query.trim() !== ""}
+        version={appVersion}
         onOpen={openFolder}
       />
       {root && (

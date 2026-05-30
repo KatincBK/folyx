@@ -100,6 +100,17 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.top-bar__spacer {
+  flex: 1;
+}
+
+.top-bar__version {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .btn {
   flex: none;
   padding: 6px 12px;
@@ -304,6 +315,7 @@ body {
 
 .player-bar__range {
   flex: 1;
+  min-width: 0; /* let the range shrink to fit instead of overflowing its container */
   height: 4px;
   cursor: pointer;
 }
