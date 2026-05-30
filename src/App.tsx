@@ -18,6 +18,8 @@ import { SearchBox } from "./components/SearchBox";
 import { FileList } from "./components/FileList";
 import { PlayerBar } from "./components/PlayerBar";
 import { ContextMenu } from "./components/ContextMenu";
+import { UpdateBanner } from "./components/UpdateBanner";
+import { useUpdater } from "./hooks/useUpdater";
 import "./styles.css";
 
 /** Simple centered message used for the empty / scanning / no-files / error states. */
@@ -56,6 +58,10 @@ function App() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Self-update: checks GitHub Releases on launch; banner appears only if found.
+  const { status: updateStatus, version: updateVersion, install: installUpdate } =
+    useUpdater();
 
   // Live, case-insensitive substring filter over the relative path.
   const filtered = useMemo(() => {
@@ -281,6 +287,13 @@ function App() {
 
   return (
     <div className="app">
+      {updateStatus !== "idle" && (
+        <UpdateBanner
+          status={updateStatus}
+          version={updateVersion}
+          onInstall={installUpdate}
+        />
+      )}
       <TopBar
         root={root}
         totalCount={files.length}

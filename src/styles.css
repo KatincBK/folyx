@@ -46,6 +46,33 @@ body {
   overflow: hidden;
 }
 
+/* ── Update banner ─────────────────────────────────────────────────────── */
+.update-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 7px 14px;
+  background: #1f2d4d;
+  border-bottom: 1px solid #2c3e68;
+  color: #cdd9f5;
+  font-size: 12px;
+}
+.update-banner__btn {
+  padding: 4px 10px;
+  background: var(--accent);
+  color: #0b1220;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.update-banner__btn:hover {
+  filter: brightness(1.08);
+}
+
 /* ── Top bar ───────────────────────────────────────────────────────────── */
 .top-bar {
   flex: none;
