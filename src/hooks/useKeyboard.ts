@@ -8,6 +8,7 @@ export interface KeyboardHandlers {
   onTogglePlayPause: () => void;
   onReplay: () => void;
   onDelete: () => void;
+  onRename: () => void;
   onFocusSearch: () => void;
   onEscape: () => void;
 }
@@ -74,6 +75,10 @@ export function useKeyboard(handlers: KeyboardHandlers): void {
         case "Delete":
           e.preventDefault();
           h.onDelete();
+          break;
+        case "F2":
+          e.preventDefault();
+          h.onRename();
           break;
       }
     };

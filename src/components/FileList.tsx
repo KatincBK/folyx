@@ -3,11 +3,17 @@ import type { AudioFile } from "../types";
 import { FileRow, ROW_HEIGHT } from "./FileRow";
 
 interface FileListProps {
-  files: AudioFile[]; // the already-filtered list
+  files: AudioFile[]; // the already-filtered/sorted list
   selectedIndex: number;
   playingPath: string | null;
+  favorites: Set<string>;
+  renamingPath: string | null;
   onSelect: (index: number) => void;
   onContextMenu: (index: number, x: number, y: number) => void;
+  onToggleFavorite: (path: string) => void;
+  onStartRename: (index: number) => void;
+  onCommitRename: (index: number, newStem: string) => void;
+  onCancelRename: () => void;
 }
 
 /**
@@ -19,8 +25,14 @@ export function FileList({
   files,
   selectedIndex,
   playingPath,
+  favorites,
+  renamingPath,
   onSelect,
   onContextMenu,
+  onToggleFavorite,
+  onStartRename,
+  onCommitRename,
+  onCancelRename,
 }: FileListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,8 +57,14 @@ export function FileList({
           index={index}
           isSelected={index === selectedIndex}
           isPlaying={file.path === playingPath}
+          isFavorite={favorites.has(file.path)}
+          isRenaming={file.path === renamingPath}
           onSelect={onSelect}
           onContextMenu={onContextMenu}
+          onToggleFavorite={onToggleFavorite}
+          onStartRename={onStartRename}
+          onCommitRename={onCommitRename}
+          onCancelRename={onCancelRename}
         />
       ))}
     </div>

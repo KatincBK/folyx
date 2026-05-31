@@ -1,3 +1,4 @@
+use lofty::file::AudioFile as LoftyAudioFile;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -11,6 +12,17 @@ struct AudioFile {
     folder: String,     // immediate parent folder name, e.g. "weapons"
     ext: String,        // lowercase extension without dot, e.g. "wav"
     size_bytes: u64,
+    duration_secs: Option<f64>, // length in seconds, or None if it couldn't be read
+}
+
+/// Read an audio file's duration (seconds) from its header/tags without decoding
+/// the whole stream. Returns None for unreadable files or bogus zero/NaN values,
+/// so the frontend can sort/filter them to the end.
+fn read_duration_secs(path: &Path) -> Option<f64> {
+    lofty::read_from_path(path)
+        .ok()
+        .map(|tagged| tagged.properties().duration().as_secs_f64())
+        .filter(|d| d.is_finite() && *d > 0.0)
 }
 
 /// Supported audio extensions (lowercase, no dot).
@@ -86,6 +98,7 @@ fn scan_folder(root: String) -> Result<Vec<AudioFile>, String> {
             .to_string();
 
         let size_bytes = entry.metadata().map(|m| m.len()).unwrap_or(0);
+        let duration_secs = read_duration_secs(path);
 
         files.push(AudioFile {
             name,
@@ -94,6 +107,7 @@ fn scan_folder(root: String) -> Result<Vec<AudioFile>, String> {
             folder,
             ext,
             size_bytes,
+            duration_secs,
         });
     }
 
@@ -107,6 +121,40 @@ fn scan_folder(root: String) -> Result<Vec<AudioFile>, String> {
 #[tauri::command]
 fn delete_file(path: String) -> Result<(), String> {
     trash::delete(&path).map_err(|e| e.to_string())
+}
+
+/// Rename a file in place (same parent folder). `new_name` is the full file name
+/// including extension, e.g. "explosion_02.wav". Returns the new absolute path so
+/// the frontend can update its record. Refuses path separators and existing
+/// targets to avoid moving or clobbering files.
+#[tauri::command]
+fn rename_file(path: String, new_name: String) -> Result<String, String> {
+    let trimmed = new_name.trim();
+    if trimmed.is_empty() {
+        return Err("Name can't be empty.".into());
+    }
+    if trimmed.contains('/') || trimmed.contains('\\') || trimmed == "." || trimmed == ".." {
+        return Err("Name can't contain a path separator.".into());
+    }
+
+    let src = Path::new(&path);
+    if !src.exists() {
+        return Err("This file no longer exists.".into());
+    }
+    let parent = src
+        .parent()
+        .ok_or_else(|| "Couldn't find the file's folder.".to_string())?;
+    let target = parent.join(trimmed);
+
+    // Never overwrite a *different* existing file. A case-only rename (e.g.
+    // "Foo.wav" → "foo.wav") on a case-insensitive filesystem resolves to the
+    // same real path, so allow that through.
+    if target.exists() && src.canonicalize().ok() != target.canonicalize().ok() {
+        return Err(format!("A file named \"{trimmed}\" already exists here."));
+    }
+
+    std::fs::rename(src, &target).map_err(|e| e.to_string())?;
+    Ok(target.to_string_lossy().to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -124,7 +172,7 @@ pub fn run() {
     }
 
     builder
-        .invoke_handler(tauri::generate_handler![scan_folder, delete_file])
+        .invoke_handler(tauri::generate_handler![scan_folder, delete_file, rename_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

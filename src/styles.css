@@ -13,6 +13,7 @@
   --text-faint: #62656c;
   --accent: #5b8cff;
   --error: #ff6b6b;
+  --star: #e8c14a;
 
   color-scheme: dark;
   accent-color: var(--accent);
@@ -153,6 +154,110 @@ body {
   color: var(--text-faint);
 }
 
+/* ── Controls bar (sort + filters) ─────────────────────────────────────── */
+.controls-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 8px 14px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+
+.controls-bar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls-bar__label {
+  color: var(--text-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: #16171a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.segmented__btn {
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.segmented__btn:hover {
+  color: var(--text);
+}
+.segmented__btn--on {
+  background: var(--bg-selected);
+  color: var(--text);
+}
+
+.controls-bar__fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #16171a;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.controls-bar__fav:hover {
+  color: var(--text);
+}
+.controls-bar__fav--on {
+  color: var(--star);
+  border-color: var(--star);
+}
+
+.controls-bar__num {
+  width: 56px;
+  padding: 4px 6px;
+  background: #16171a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.controls-bar__num:focus {
+  border-color: var(--accent);
+}
+.controls-bar__dash,
+.controls-bar__unit {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.controls-bar__clear {
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.controls-bar__clear:hover {
+  color: var(--text);
+  background: #2c2f36;
+}
+
 /* ── File list ─────────────────────────────────────────────────────────── */
 .file-list {
   flex: 1;
@@ -177,6 +282,30 @@ body {
 }
 .file-row--playing {
   box-shadow: inset 2px 0 0 var(--accent);
+}
+/* Starred rows get a yellow ring (drawn inside, so it never shifts layout). */
+.file-row--favorite {
+  outline: 1px solid var(--star);
+  outline-offset: -1px;
+}
+
+.file-row__star {
+  flex: none;
+  width: 18px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
+.file-row__star:hover {
+  color: var(--star);
+}
+.file-row__star--on {
+  color: var(--star);
 }
 
 .file-row__marker {
@@ -208,6 +337,15 @@ body {
   text-overflow: ellipsis;
 }
 
+.file-row__dur {
+  flex: none;
+  width: 38px;
+  text-align: right;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .file-row__ext {
   flex: none;
   color: var(--text-faint);
@@ -216,6 +354,19 @@ body {
   padding: 2px 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
+}
+
+/* Inline rename editor (double-click a name, or F2). */
+.file-row__rename {
+  width: 100%;
+  padding: 3px 6px;
+  background: #16171a;
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
 }
 
 /* ── Centered states (empty / scanning / error / no files) ─────────────── */

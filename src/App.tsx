@@ -10,12 +10,19 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { open } from "@tauri-apps/plugin-dialog";
 
-import type { AudioFile } from "./types";
-import { getLastFolder, setLastFolder } from "./store";
+import type { AudioFile, Filters, SortMode } from "./types";
+import { NO_FILTERS } from "./types";
+import {
+  getLastFolder,
+  setLastFolder,
+  getFavorites as loadFavorites,
+  setFavorites as saveFavorites,
+} from "./store";
 import { useAudioPlayer } from "./hooks/useAudioPlayer";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { TopBar } from "./components/TopBar";
 import { SearchBox } from "./components/SearchBox";
+import { ControlsBar } from "./components/ControlsBar";
 import { FileList } from "./components/FileList";
 import { PlayerBar } from "./components/PlayerBar";
 import { ContextMenu } from "./components/ContextMenu";
@@ -60,6 +67,17 @@ function App() {
   const [playError, setPlayError] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<SortMode>("default");
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
+
+  // Load starred paths once on launch (persisted globally, across folders).
+  useEffect(() => {
+    void loadFavorites()
+      .then((list) => setFavorites(new Set(list)))
+      .catch(() => {});
+  }, []);
 
   // App version (from tauri.conf.json) shown in the top-right corner.
   useEffect(() => {
@@ -72,12 +90,42 @@ function App() {
   const { status: updateStatus, version: updateVersion, install: installUpdate } =
     useUpdater();
 
-  // Live, case-insensitive substring filter over the relative path.
+  // The visible list: search → favorites/length filters → sort. Each step is
+  // skipped when inactive so the common "no filters, default order" case returns
+  // the original array untouched.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return files;
-    return files.filter((f) => f.rel_path.toLowerCase().includes(q));
-  }, [files, query]);
+    let list = files;
+    if (q) list = list.filter((f) => f.rel_path.toLowerCase().includes(q));
+    if (filters.favoritesOnly) list = list.filter((f) => favorites.has(f.path));
+    if (filters.minSecs != null || filters.maxSecs != null) {
+      const min = filters.minSecs ?? -Infinity;
+      const max = filters.maxSecs ?? Infinity;
+      // Unknown-duration files can't satisfy a numeric range, so drop them.
+      list = list.filter(
+        (f) => f.duration_secs != null && f.duration_secs >= min && f.duration_secs <= max,
+      );
+    }
+    if (sort === "name") {
+      list = [...list].sort((a, b) =>
+        a.name.toLowerCase().localeCompare(b.name.toLowerCase()),
+      );
+    } else if (sort === "duration") {
+      list = [...list].sort((a, b) => {
+        // Unknown durations sort to the end.
+        if (a.duration_secs == null) return b.duration_secs == null ? 0 : 1;
+        if (b.duration_secs == null) return -1;
+        return a.duration_secs - b.duration_secs;
+      });
+    }
+    return list;
+  }, [files, query, favorites, filters, sort]);
+
+  const isFiltering =
+    query.trim() !== "" ||
+    filters.favoritesOnly ||
+    filters.minSecs != null ||
+    filters.maxSecs != null;
 
   // The one persistent <audio> element; src is set imperatively (see useAudioPlayer).
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -176,6 +224,84 @@ function App() {
     });
   }, []);
 
+  // Star / unstar a file. Persists the whole set so it survives re-scans.
+  const toggleFavorite = useCallback((path: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      void saveFavorites([...next]);
+      return next;
+    });
+  }, []);
+
+  // Changing the order or filters can move/remove the cursor's target, so drop
+  // the selection (matches how typing in the search box behaves).
+  const onSortChange = useCallback((next: SortMode) => {
+    setSort(next);
+    setSelectedIndex(-1);
+  }, []);
+  const onFiltersChange = useCallback((next: Filters) => {
+    setFilters(next);
+    setSelectedIndex(-1);
+  }, []);
+
+  // ── Renaming (double-click a name, or F2) ──────────────────────────────
+  const onStartRename = useCallback((index: number) => {
+    const file = filteredRef.current[index];
+    if (file) setRenamingPath(file.path);
+  }, []);
+  const onCancelRename = useCallback(() => setRenamingPath(null), []);
+
+  // Commit a new stem: rename on disk, then update the file record (and any
+  // references to its old path in favorites / the player) in place.
+  const onCommitRename = useCallback(async (index: number, newStem: string) => {
+    const file = filteredRef.current[index];
+    if (!file) {
+      setRenamingPath(null);
+      return;
+    }
+    const dot = file.name.lastIndexOf(".");
+    const ext = dot > 0 ? file.name.slice(dot) : ""; // ".wav", original case
+    const currentStem = dot > 0 ? file.name.slice(0, dot) : file.name;
+    const stem = newStem.trim();
+    if (stem === "" || stem === currentStem) {
+      setRenamingPath(null); // nothing to do
+      return;
+    }
+    const newName = stem + ext;
+    let newPath: string;
+    try {
+      newPath = await invoke<string>("rename_file", { path: file.path, newName });
+    } catch (err) {
+      setPlayError(`Couldn't rename "${file.name}": ${String(err)}`);
+      setRenamingPath(null);
+      return;
+    }
+    const oldPath = file.path;
+    // The file stays in its folder, so only rel_path's last segment changes.
+    const slash = file.rel_path.lastIndexOf("/");
+    const newRelPath =
+      slash >= 0 ? file.rel_path.slice(0, slash + 1) + newName : newName;
+    const patch = { name: newName, path: newPath, rel_path: newRelPath };
+
+    setFiles((prev) =>
+      prev.map((f) => (f.path === oldPath ? { ...f, ...patch } : f)),
+    );
+    setPlayingFile((prev) =>
+      prev && prev.path === oldPath ? { ...prev, ...patch } : prev,
+    );
+    setFavorites((prev) => {
+      if (!prev.has(oldPath)) return prev;
+      const next = new Set(prev);
+      next.delete(oldPath);
+      next.add(newPath);
+      void saveFavorites([...next]);
+      return next;
+    });
+    setRenamingPath(null);
+  }, []);
+
   // ── Folder scanning ───────────────────────────────────────────────────
   const scan = useCallback(async (path: string, isRestore = false) => {
     audioRef.current?.pause();
@@ -185,6 +311,7 @@ function App() {
     setPlayingFile(null);
     setIsPlaying(false);
     setQuery("");
+    setRenamingPath(null);
     try {
       const result = await invoke<AudioFile[]>("scan_folder", { root: path });
       setFiles(result);
@@ -239,6 +366,10 @@ function App() {
     onTogglePlayPause: () => controller.togglePlayPause(),
     onReplay: () => play(selectedIndexRef.current),
     onDelete: () => void deleteSelected(),
+    onRename: () => {
+      const file = filteredRef.current[selectedIndexRef.current];
+      if (file) setRenamingPath(file.path);
+    },
     onFocusSearch: () => {
       const el = searchInputRef.current;
       if (el) {
@@ -288,8 +419,14 @@ function App() {
         files={filtered}
         selectedIndex={selectedIndex}
         playingPath={playingFile?.path ?? null}
+        favorites={favorites}
+        renamingPath={renamingPath}
         onSelect={onSelect}
         onContextMenu={onContextMenu}
+        onToggleFavorite={toggleFavorite}
+        onStartRename={onStartRename}
+        onCommitRename={onCommitRename}
+        onCancelRename={onCancelRename}
       />
     );
   }
@@ -307,12 +444,20 @@ function App() {
         root={root}
         totalCount={files.length}
         filteredCount={filtered.length}
-        isFiltering={query.trim() !== ""}
+        isFiltering={isFiltering}
         version={appVersion}
         onOpen={openFolder}
       />
       {root && (
         <SearchBox query={query} onChange={onSearchChange} inputRef={searchInputRef} />
+      )}
+      {root && files.length > 0 && (
+        <ControlsBar
+          sort={sort}
+          onSortChange={onSortChange}
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+        />
       )}
       {content}
       {root && (
